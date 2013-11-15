@@ -1,0 +1,359 @@
+void srecmult(double* A, double* B, double* C,int m,int n, int p,int sA,int sB, int sC,double *P) {
+	register int i,j,k;
+	int u,v,t;
+	double sum;
+	double *A1,*B1;
+	if (m + n + p <= CUTOFF) {
+		for (i = 0; i < m; ++i) {
+			for (j = 0; j < p; ++j) {
+				v = i * sB;
+				u = i * sC;
+				t = j + u;
+				sum = 0.;
+				for (k = 0; k < n;++k) {
+					sum += A[k + v] * B[j + k * sC];
+				}
+				C[t] = sum;
+			}
+		}
+
+		
+	} else {
+		sA = n; sB = p; sC = p;
+		m/=2;n/=2;p/=2;
+		// P1
+		//comp_P1(A,B,P,m,n,p,sA,sB,sC);
+		A1 = (double*) malloc(sizeof(double) * m * n);
+		B1 = (double*) malloc(sizeof(double) * n * p);
+		madd_stride(A,A + n + m * sB,A1,m,n,2*n,2*n,n);
+		madd_stride(B,B + p,B1,n,p,2*p,2*p,p);
+		
+		//printf("%d \n",n + m * sB);
+		srecmult(A1,B1,P,m,n,p,n,p,p,P);
+		free(B1);
+		free(A1);
+		
+		//for(i = 0; i < m*p;++i)
+			//printf("P1 %lf \n",P[i]);
+	
+		for(i = 0; i < m;++i) {
+			u = i * sC;
+			v = i * p;
+			t = u + p + m * sC;
+			for (j = 0; j < p;++j) {
+				C[j + u] = C[j + t] = P[j + v];
+			}
+		}
+		// P2
+		//rmadd_stride(A + m * sB,A + n + m * sB,A1,m,n,p,sB,sB,sB/2);
+		A1 = (double*) malloc(sizeof(double) * m * n);
+
+		madd_stride(A + m * sB,A + n + m * sB,A1,m,n,2*n,2*n,n);
+		srecmult(A1,B,P,m,n,p,n,p,p,P);
+		free(A1);
+		
+		for(i = 0; i < m;++i) {
+			u = (i + m) * sC;
+			v = i * p;
+			for (j = 0; j < p;++j) {
+				C[j + u] = P[j + v];
+			}
+		}
+		
+		//rmsub_stride(C + p + m * sC,P,C + p + m * sC,m,p,n,sC,sC/2,sC);
+		msub_stride(C + p + m * sC,P,C + p + m * sC,m,p,sC,sC/2,sC);
+		//P3
+		
+		B1 = (double*) malloc(sizeof(double) * n * p);
+		//rmsub_stride(B + p,B + p + n * sC,B1,n,p,m,sC,sC,sC/2);
+		msub_stride(B + p,B + p + n * sC,B1,n,p,2*p,2*p,p);
+		srecmult(A,B1,P,m,n,p,n,p,p,P);
+		
+		free(B1);
+		
+		for(i = 0; i < m;++i) {
+			u = i * sC + p;
+			v = i * p;
+			for (j = 0; j < p;++j) {
+				C[j + u] = P[j + v];
+			}
+		}
+		
+		
+		//rmadd_stride(C + p + m * sC,P,C + p + m * sC,m,p,n,sC,sC/2,sC);
+		madd_stride(C + p + m * sC,P,C + p + m * sC,m,p,sC,sC/2,sC);
+		
+		//P4
+		
+		B1 = (double*) malloc(sizeof(double) * n * p);
+		//rmsub_stride(B + n * sC,B,B1,n,p,m,sC,sC,sC/2);
+		msub_stride(B + n * sC,B,B1,n,p,2*p,2*p,p);
+		srecmult(A + n + m * sB,B1,P,m,n,p,n,p,p,P);
+		
+		free(B1);
+		
+		//rmadd_stride(C + m * sC,P,C + m * sC,m,p,n,sC,sC/2,sC);
+		//rmadd_stride(C,P,C,m,p,n,sC,sC/2,sC);
+		madd_stride(C + m * sC,P,C + m * sC,m,p,sC,sC/2,sC);
+		madd_stride(C,P,C,m,p,sC,sC/2,sC);
+
+		
+		//P5
+		A1 = (double*) malloc(sizeof(double) * m * n);
+		
+		//rmadd_stride(A,A + n,A1,m,n,p,sB,sB,sB/2);
+		madd_stride(A,A + n,A1,m,n,2*n,2*n,n);
+		srecmult(A1,B + p + n * sC,P,m,n,p,n,p,p,P);
+		free(A1);
+		
+		//rmsub_stride(C,P,C,m,p,n,sC,sC/2,sC);
+		//rmadd_stride(C + p,P,C + p,m,p,n,sC,sC/2,sC);
+		msub_stride(C,P,C,m,p,sC,sC/2,sC);
+		madd_stride(C + p,P,C + p,m,p,sC,sC/2,sC);
+		
+		//P6
+		A1 = (double*) malloc(sizeof(double) * m * n);
+		B1 = (double*) malloc(sizeof(double) * n * p);
+		//rmsub_stride(A + m * sB,A,A1,m,n,p,sB,sB,sB/2);
+		//rmadd_stride(B,B + p,B1,n,p,m,sC,sC,sC/2);
+		msub_stride(A + m * sB,A,A1,m,n,2*n,2*n,n);
+		madd_stride(B,B + p,B1,n,p,2*p,2*p,p);
+		srecmult(A1,B1,P,m,n,p,n,p,p,P);
+		
+		free(A1);
+		free(B1);
+		//rmadd_stride(C + p + m * sC,P,C + p + m * sC,m,p,n,sC,sC/2,sC);
+		madd_stride(C + p + m * sC,P,C + p + m * sC,m,p,sC,sC/2,sC);
+		
+		
+		//P7
+		A1 = (double*) malloc(sizeof(double) * m * n);
+		B1 = (double*) malloc(sizeof(double) * n * p);
+		//rmsub_stride(A + n,A + n + m * sB,A1,m,n,p,sB,sB,sB/2);
+		//rmadd_stride(B + n * sC,B + p + n *sC,B1,n,p,m,sC,sC,sC/2);
+		msub_stride(A + n,A + n + m * sB,A1,m,n,2*n,2*n,n);
+		madd_stride(B + n * sC,B + p + n *sC,B1,n,p,2*p,2*p,p);
+		srecmult(A1,B1,P,m,n,p,n,p,p,P);
+		//rmadd_stride(C,P,C,m,p,n,sC,sC/2,sC);
+		madd_stride(C,P,C,m,p,sC,sC/2,sC);
+		
+		free(A1);
+		free(B1);
+		
+	}
+}
+
+void smult(double* A, double* B, double* C,int m,int n, int p) {
+	int a,b,c,nrec,i;
+	double *X,*Y,*Z,*P,*A1,*B1;
+	a = m;
+	b = n;
+	c = p;
+	nrec = findrec(&a,&b,&c);
+	X = (double*) malloc(sizeof(double) * a * b);
+	Y = (double*) malloc(sizeof(double) * b * c);
+	Z = (double*) malloc(sizeof(double) * a * c);
+	P = (double*) malloc(sizeof(double) * (a/2) * (c/2));
+
+	
+	add_zero_pad(A,m,n,a-m,b-n,X);
+	add_zero_pad(B,n,p,b-n,c-p,Y);
+
+	srecmult(X,Y,Z,a,b,c,a,b,c,P);
+	// Memory allocation needs work
+	
+	remove_zero_pad(Z,a,c,a-m,c-p,C);
+	
+	// free X,Y,Z
+	free(X);
+	free(Y);
+	free(Z);
+	free(P);
+	
+}
+
+
+
+.................................................................
+
+
+
+void srecmult(double* A, double* B, double* C,int m,int n, int p,int sA,int sB, int sP,int sD) {
+	register int i,j,k;
+	int u,v,t;
+	double sum;
+	double *A1,*B1,*P;
+	if (m + n + p <= CUTOFF) {
+		for (i = 0; i < m; ++i) {
+			for (j = 0; j < p; ++j) {
+				v = i * sA;
+				u = i * sP;
+				t = j + u;
+				sum = 0.;
+				for (k = 0; k < n;++k) {
+					sum += A[k + v] * B[j + k * sB];
+				}
+				C[t] = sum;
+			}
+		}
+
+		
+	} else {
+		sA = n; sB = p;
+		m/=2;n/=2;p/=2;
+		// P1
+		//comp_P1(A,B,P,m,n,p,sA,sB,sC);
+		P = (double*) malloc(sizeof(double) * m * p);
+		A1 = (double*) malloc(sizeof(double) * m * n);
+		B1 = (double*) malloc(sizeof(double) * n * p);
+		madd_stride(A,A + n + m * sA,A1,m,n,sA,sA,n);
+		madd_stride(B,B + p,B1,n,p,sB,sB,p);
+		
+		printf("%d %d %d %d %d %d %d \n",m,n,p,sA,sB,sD,sP);
+		srecmult(A1,B1,P,m,n,p,n,p,p,sD);
+		free(B1);
+		free(A1);
+		
+		for(i = 0; i < m*p;++i)
+			printf("P1 %lf \n",P[i]);
+	
+		for(i = 0; i < m;++i) {
+			u = i * sD;
+			v = i * p;
+			t = u + p + m * sD;
+			for (j = 0; j < p;++j) {
+				C[j + u] = C[j + t] = P[j + v];
+			}
+		}
+		free(P);
+		// P2
+		//rmadd_stride(A + m * sB,A + n + m * sB,A1,m,n,p,sB,sB,sB/2);
+		P = (double*) malloc(sizeof(double) * m * p);
+		A1 = (double*) malloc(sizeof(double) * m * n);
+
+		madd_stride(A + m * sA,A + n + m * sA,A1,m,n,2*n,2*n,n);
+		srecmult(A1,B,P,m,n,p,n,p,p,sD);
+		free(A1);
+		
+		for(i = 0; i < m;++i) {
+			u = (i + m) * sD;
+			v = i * p;
+			for (j = 0; j < p;++j) {
+				C[j + u] = P[j + v];
+			}
+		}
+		
+		//rmsub_stride(C + p + m * sC,P,C + p + m * sC,m,p,n,sC,sC/2,sC);
+		msub_stride(C + p + m * sD,P,C + p + m * sD,m,p,sD,sP,sD);
+		free(P);
+		//P3
+		P = (double*) malloc(sizeof(double) * m * p);
+		B1 = (double*) malloc(sizeof(double) * n * p);
+		//rmsub_stride(B + p,B + p + n * sC,B1,n,p,m,sC,sC,sC/2);
+		msub_stride(B + p,B + p + n * sB,B1,n,p,2*p,2*p,p);
+		srecmult(A,B1,P,m,n,p,n,p,p,sD);
+		
+		free(B1);
+		
+		for(i = 0; i < m;++i) {
+			u = i * sD + p;
+			v = i * p;
+			for (j = 0; j < p;++j) {
+				C[j + u] = P[j + v];
+			}
+		}
+		
+		
+		//rmadd_stride(C + p + m * sC,P,C + p + m * sC,m,p,n,sC,sC/2,sC);
+		madd_stride(C + p + m * sD,P,C + p + m * sD,m,p,sD,sP,sD);
+		free(P);
+		//P4
+		P = (double*) malloc(sizeof(double) * m * p);
+		B1 = (double*) malloc(sizeof(double) * n * p);
+		//rmsub_stride(B + n * sC,B,B1,n,p,m,sC,sC,sC/2);
+		msub_stride(B + n * sB,B,B1,n,p,2*p,2*p,p);
+		srecmult(A + n + m * sA,B1,P,m,n,p,n,p,p,sD);
+		
+		free(B1);
+		
+		//rmadd_stride(C + m * sC,P,C + m * sC,m,p,n,sC,sC/2,sC);
+		//rmadd_stride(C,P,C,m,p,n,sC,sC/2,sC);
+		madd_stride(C + m * sD,P,C + m * sD,m,p,sD,sP,sD);
+		madd_stride(C,P,C,m,p,sD,sP,sD);
+
+		free(P);
+		//P5
+		A1 = (double*) malloc(sizeof(double) * m * n);
+		P = (double*) malloc(sizeof(double) * m * p);
+		//rmadd_stride(A,A + n,A1,m,n,p,sB,sB,sB/2);
+		madd_stride(A,A + n,A1,m,n,2*n,2*n,n);
+		srecmult(A1,B + p + n * sB,P,m,n,p,n,p,p,sD);
+		free(A1);
+		
+		//rmsub_stride(C,P,C,m,p,n,sC,sC/2,sC);
+		//rmadd_stride(C + p,P,C + p,m,p,n,sC,sC/2,sC);
+		msub_stride(C,P,C,m,p,sD,sP,sD);
+		madd_stride(C + p,P,C + p,m,p,sD,sP,sD);
+		free(P);
+		//P6
+		A1 = (double*) malloc(sizeof(double) * m * n);
+		B1 = (double*) malloc(sizeof(double) * n * p);
+		P = (double*) malloc(sizeof(double) * m * p);
+		//rmsub_stride(A + m * sB,A,A1,m,n,p,sB,sB,sB/2);
+		//rmadd_stride(B,B + p,B1,n,p,m,sC,sC,sC/2);
+		msub_stride(A + m * sA,A,A1,m,n,2*n,2*n,n);
+		madd_stride(B,B + p,B1,n,p,2*p,2*p,p);
+		srecmult(A1,B1,P,m,n,p,n,p,p,sD);
+		
+		free(A1);
+		free(B1);
+		//rmadd_stride(C + p + m * sC,P,C + p + m * sC,m,p,n,sC,sC/2,sC);
+		madd_stride(C + p + m * sD,P,C + p + m * sD,m,p,sD,sP,sD);
+		
+		free(P);
+		//P7
+		A1 = (double*) malloc(sizeof(double) * m * n);
+		B1 = (double*) malloc(sizeof(double) * n * p);
+		P = (double*) malloc(sizeof(double) * m * p);
+		//rmsub_stride(A + n,A + n + m * sB,A1,m,n,p,sB,sB,sB/2);
+		//rmadd_stride(B + n * sC,B + p + n *sC,B1,n,p,m,sC,sC,sC/2);
+		msub_stride(A + n,A + n + m * sA,A1,m,n,2*n,2*n,n);
+		madd_stride(B + n * sB,B + p + n *sB,B1,n,p,2*p,2*p,p);
+		srecmult(A1,B1,P,m,n,p,n,p,p,sD);
+		//rmadd_stride(C,P,C,m,p,n,sC,sC/2,sC);
+		madd_stride(C,P,C,m,p,sD,sP,sD);
+		
+		free(A1);
+		free(B1);
+		free(P);
+	}
+}
+
+void smult(double* A, double* B, double* C,int m,int n, int p) {
+	int a,b,c,nrec,i;
+	double *X,*Y,*Z,*P;
+	a = m;
+	b = n;
+	c = p;
+	nrec = findrec(&a,&b,&c);
+	X = (double*) malloc(sizeof(double) * a * b);
+	Y = (double*) malloc(sizeof(double) * b * c);
+	Z = (double*) malloc(sizeof(double) * a * c);
+	P = (double*) malloc(sizeof(double) * (a/2) * (c/2));
+
+	
+	add_zero_pad(A,m,n,a-m,b-n,X);
+	add_zero_pad(B,n,p,b-n,c-p,Y);
+
+	srecmult(X,Y,Z,a,b,c,b,c,c/2,c);
+	// Memory allocation needs work
+	
+	remove_zero_pad(Z,a,c,a-m,c-p,C);
+	
+	// free X,Y,Z
+	free(X);
+	free(Y);
+	free(Z);
+	free(P);
+	
+}

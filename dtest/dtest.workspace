@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CodeLite_Workspace Name="dtest" Database="./dtest.tags">
+  <Project Name="dtest" Path="dtest.project" Active="No"/>
+  <Project Name="Laurent" Path="Laurent/Laurent.project" Active="No"/>
+  <Project Name="lifting" Path="lifting/lifting.project" Active="No"/>
+  <Project Name="hsFFT" Path="hsFFT/hsFFT.project" Active="No"/>
+  <Project Name="itertest" Path="itertest/itertest.project" Active="Yes"/>
+  <Project Name="wavedemo" Path="wavedemo/wavedemo.project" Active="No"/>
+  <BuildMatrix>
+    <WorkspaceConfiguration Name="Debug" Selected="yes">
+      <Project Name="dtest" ConfigName="Debug"/>
+      <Project Name="hsFFT" ConfigName="Debug"/>
+      <Project Name="itertest" ConfigName="Debug"/>
+      <Project Name="Laurent" ConfigName="Debug"/>
+      <Project Name="lifting" ConfigName="Debug"/>
+      <Project Name="wavedemo" ConfigName="Debug"/>
+    </WorkspaceConfiguration>
+    <WorkspaceConfiguration Name="Release" Selected="yes">
+      <Project Name="dtest" ConfigName="Release"/>
+      <Project Name="Laurent" ConfigName="Release"/>
+      <Project Name="lifting" ConfigName="Release"/>
+      <Project Name="hsFFT" ConfigName="Release"/>
+      <Project Name="itertest" ConfigName="Release"/>
+      <Project Name="wavedemo" ConfigName="Release"/>
+    </WorkspaceConfiguration>
+  </BuildMatrix>
+</CodeLite_Workspace>

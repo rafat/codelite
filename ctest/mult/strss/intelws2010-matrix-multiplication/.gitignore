@@ -1,0 +1,11 @@
+*~
+*.o
+*.aux
+*.log
+*.out
+*.toc
+*.bbl
+*.blg
+bin/
+.project
+.cproject

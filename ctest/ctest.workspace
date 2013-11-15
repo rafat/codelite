@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CodeLite_Workspace Name="ctest" Database="./ctest.tags">
+  <Project Name="mult" Path="mult/mult.project" Active="No"/>
+  <Project Name="ludecomp" Path="ludecomp/ludecomp.project" Active="No"/>
+  <Project Name="qrdecomp" Path="qrdecomp/qrdecomp.project" Active="No"/>
+  <Project Name="cholesky" Path="cholesky/cholesky.project" Active="No"/>
+  <Project Name="newton1d" Path="newton1d/newton1d.project" Active="No"/>
+  <Project Name="newtonmin" Path="newtonmin/newtonmin.project" Active="Yes"/>
+  <BuildMatrix>
+    <WorkspaceConfiguration Name="Debug" Selected="yes">
+      <Project Name="mult" ConfigName="Debug"/>
+      <Project Name="ludecomp" ConfigName="Debug"/>
+      <Project Name="qrdecomp" ConfigName="Debug"/>
+      <Project Name="cholesky" ConfigName="Debug"/>
+      <Project Name="newton1d" ConfigName="Debug"/>
+      <Project Name="newtonmin" ConfigName="Debug"/>
+    </WorkspaceConfiguration>
+    <WorkspaceConfiguration Name="Release" Selected="yes">
+      <Project Name="mult" ConfigName="Release"/>
+      <Project Name="ludecomp" ConfigName="Release"/>
+      <Project Name="qrdecomp" ConfigName="Release"/>
+      <Project Name="cholesky" ConfigName="Release"/>
+      <Project Name="newton1d" ConfigName="Release"/>
+      <Project Name="newtonmin" ConfigName="Release"/>
+    </WorkspaceConfiguration>
+  </BuildMatrix>
+</CodeLite_Workspace>
