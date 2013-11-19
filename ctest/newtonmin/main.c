@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "newtonmin.h"
+#include "conjgrad.h"
 
 
 void hilb(double *A,int N)
@@ -18,7 +19,7 @@ double func1(double *x,int N)
 	double f;
 	double pi,alpha,alpha2;
 	pi = 3.14159;
-	alpha = 0.01;
+	alpha = 1;
 	alpha2 = alpha*alpha;
 
 	//f = pow((x[0]-2.0),4.0) + pow((x[0]-2.0),2.0) * x[1]*x[1] + (x[1] + 1.0) * (x[1] + 1.0);
@@ -51,7 +52,7 @@ int main(int argc, char **argv)
 	double fsval,alpha,delta;
 	N = 2;
 	method = 1;
-	alpha = 0.01;delta = -1.0;
+	alpha = 1;delta = -1.0;
 	double xi[2] = {6.39,-0.221};
 	double x[2] = {0,0};
 	//double dx[2] = {1.0e5,1.0e-05};
@@ -61,13 +62,11 @@ int main(int argc, char **argv)
 	//double f2[4] = {0,0,0,0};
 	//newton_fd(func4,xi,N,x);
 	//rcode = newton_min_func(func1,xi,N,dx,fsval,x);
-	rcode = newton_min_trust(func1,xi,N,dx,fsval,delta,method,x);
+	//rcode = newton_min_trust(func1,xi,N,dx,fsval,delta,method,x);
+	rcode = conjgrad_min_lin(func1,xi,N,x);
 	mdisplay(x,1,N);
 	printf("Termination Code %d %g \n",rcode,func1(x,N));
-	//jacobian_fd(func4,xi,N,f1);
-	//mdisplay(f1,1,N);
-	//hessian_fd(func4,x,N,f2);
-	//mdisplay(f2,N,N);
+	
 
 	return 0;
 }
