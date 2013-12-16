@@ -16,7 +16,9 @@ int cgr(double *xi,int N,double *A,double *b,double *xf);
 
 int cgpc(double *xi,int N,double *A,double *b,double *xf);
 
-int cgp(double (*funcpt)(double *,int),double *xi,int N,double *dx,double *xf);
+int cgp(double (*funcpt)(double *,int),double *xi,int N,double *dx,double *xf);// Fletcher Reeves
+
+int cgpr(double (*funcpt)(double *,int),double *xi,int N,double *dx,double *xf); //Polak Ribiere +
 
 int conjgrad_min_lin(double (*funcpt)(double *,int),double *xi,int N,double *dx,double *xf);
 
