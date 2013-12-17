@@ -22,7 +22,7 @@ static void jrotate(double *A,int N,double a,double b,int i) {
 	}
 }
 
-void qrupdate(double *R,int N,double *u,double *v) {
+static void qrupdate(double *R,int N,double *u,double *v) {
 	int i,j,k;
 	
 	k = N-1;
@@ -76,7 +76,7 @@ void bfgs_naive(double *H,int N,double *xi,double *xf,double *jac,double *jacf) 
 			t[i] = 0.0;
 			for(j = 0; j < i;++j) {
 				ct = j * N;
-				t[i] += H[ct+i] * sk[j]
+				t[i] += H[ct+i] * sk[j];
 			}
 			
 			for(j = i; j < N;++j) {
@@ -84,10 +84,10 @@ void bfgs_naive(double *H,int N,double *xi,double *xf,double *jac,double *jacf) 
 				t[i] += H[ct + j] * sk[j];
 			}
 			yt = fabs(yk[i] - t[i]);
-			if (jac > jacf) {
-				jacm = jac;
+			if (jac[i] > jacf[i]) {
+				jacm = jac[i];
 			} else {
-				jacm = jacf;
+				jacm = jacf[i];
 			}
 			if (yt >= fd * jacm) {
 				supd = 0;
@@ -97,9 +97,9 @@ void bfgs_naive(double *H,int N,double *xi,double *xf,double *jac,double *jacf) 
 			mmult(sk,t,temp2,1,N,1);
 			for(i = 0;i < N; ++i) {
 				ct = i * N;
-				for(j = 0; j < N;++j) {
+				for(j = i; j < N;++j) {
 					H[ct+j] += (yk[i]*yk[j]/temp[0]);
-					H[ct+j] -= (t[i]*t[j]/temp[2]);
+					H[ct+j] -= (t[i]*t[j]/temp2[0]);
 				}
 			}
 		} 
@@ -112,7 +112,7 @@ void bfgs_naive(double *H,int N,double *xi,double *xf,double *jac,double *jacf) 
 	free(t);
 }
 
-void inithess_naive(double *H,int N,double fi,double fsval,double *dx) {
+static void inithess_naive(double *H,int N,double fi,double fsval,double *dx) {
 	int i,j,ct;
 	double temp;
 	
@@ -141,7 +141,7 @@ int bfgs_min_naive(double (*funcpt)(double *,int),double *xi,int N,double *dx,do
 	int i,siter,retval;
 	double gtol,stol,dt1,dt2;
 	double fx,num,den,stop0,maxstep,fxf;
-	double *jac,*hess,*scheck,*xc,*L,*step;
+	double *jac,*hess,*scheck,*xc,*L,*step,*jacf;
 	
 	jac = (double*) malloc(sizeof(double) *N);
 	scheck = (double*) malloc(sizeof(double) *N);
@@ -149,6 +149,7 @@ int bfgs_min_naive(double (*funcpt)(double *,int),double *xi,int N,double *dx,do
 	step = (double*) malloc(sizeof(double) *N);
 	hess = (double*) malloc(sizeof(double) *N * N);
 	L = (double*) malloc(sizeof(double) *N * N);
+	jacf = (double*) malloc(sizeof(double) *N);
 	
 	/*
 	 * Return Codes
@@ -226,7 +227,8 @@ int bfgs_min_naive(double (*funcpt)(double *,int),double *xi,int N,double *dx,do
 		return rcode;
 	}
 	
-	hessian_fd(funcpt,xi,N,dx,hess);
+	//hessian_fd(funcpt,xi,N,dx,hess);
+	inithess_naive(hess,N,fx,fsval,dx);
 	
 	for(i = 0; i < N;++i) {
 		xc[i] = xi[i];
@@ -234,7 +236,6 @@ int bfgs_min_naive(double (*funcpt)(double *,int),double *xi,int N,double *dx,do
 	
 	while (rcode == 0 && iter < siter) {
 		iter++;
-		
 		modelhess(hess,N,dx,L);
 		scale(jac,1,N,-1.0);
 		//mdisplay(hess,N,N);
@@ -249,12 +250,14 @@ int bfgs_min_naive(double (*funcpt)(double *,int),double *xi,int N,double *dx,do
 			printf("Program Exiting as the function value exceeds the maximum double value");
 			exit(1);
 		}
-		printf("%d \n",iter);
-		grad_fd(funcpt,xf,N,dx,jac);
-		rcode = stopcheck(fxf,N,xc,xf,jac,dx,fsval,gtol,stol,retval);
-		hessian_fd(funcpt,xf,N,dx,hess);
+		printf("%d %g \n",iter,fxf);
+		grad_fd(funcpt,xf,N,dx,jacf);
+		rcode = stopcheck(fxf,N,xc,xf,jacf,dx,fsval,gtol,stol,retval);
+		//hessian_fd(funcpt,xf,N,dx,hess);
+		bfgs_naive(hess,N,xc,xf,jac,jacf);
 		for(i = 0; i < N;++i) {
 			xc[i] = xf[i];
+			jac[i] = jacf[i];
 		}
 	}
 	
@@ -273,5 +276,6 @@ int bfgs_min_naive(double (*funcpt)(double *,int),double *xi,int N,double *dx,do
 	free(xc);
 	free(L);
 	free(step);
+	free(jacf);
 	return rcode;
 }
