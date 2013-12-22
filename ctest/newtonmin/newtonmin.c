@@ -599,7 +599,7 @@ int lnsrchmod(double (*funcpt)(double *,int),double *xi,double *jac,double *p,in
 		scale(p,1,N,maxstep/nlen);
 		nlen = maxstep;
 	}
-	
+	//mdisplay(p,1,N);
 	mmult(jac,p,slopei,1,N,1);
 	for(i = 0; i < N;++i) {
 		if (fabs(xi[i]) > 1.0 /fabs(dx[i])) {
@@ -626,6 +626,7 @@ int lnsrchmod(double (*funcpt)(double *,int),double *xi,double *jac,double *p,in
 		}
 		madd(xi,pl,x,1,N);
 		funcf = funcpt(x,N);
+		printf("%g lmax %g %g \n",lambda,funcf,funci + alpha *lambda *slopei[0]);
 		if (funcf >= DBL_MAX || funcf <= -DBL_MAX) {
 			printf("Program Exiting as the function value exceeds the maximum double value");
 			exit(1);
@@ -633,10 +634,12 @@ int lnsrchmod(double (*funcpt)(double *,int),double *xi,double *jac,double *p,in
 		if (funcf <= funci + alpha *lambda *slopei[0]) {
 			grad_fd(funcpt,x,N,dx,jacf);
 			mmult(jacf,p,slopen,1,N,1);
+			
 			if(slopen[0] < beta * slopei[0]) {
 					if (lambda == 1.0 && nlen < maxstep) {
 						lambdamax = maxstep / nlen;
-						while (funcf <= funci + alpha *lambda *slopei[0] || slopen[0] < beta * slopei[0] || lambda < lambdamax) {
+						
+						while (funcf <= funci + alpha *lambda *slopei[0] && slopen[0] < beta * slopei[0] && lambda < lambdamax) {
 							lambdaprev = lambda;
 							funcprev = funcf;
 							if ( 2*lambda < lambdamax) {
@@ -644,6 +647,7 @@ int lnsrchmod(double (*funcpt)(double *,int),double *xi,double *jac,double *p,in
 							} else {
 								lambda = lambdamax;
 							}
+							//printf("%g lmax %g %g \n",lambda,funcf,funci + alpha *lambda *slopei[0]);
 							for(i = 0; i < N;++i) {
 								pl[i] = p[i] * lambda;
 							}
@@ -658,8 +662,10 @@ int lnsrchmod(double (*funcpt)(double *,int),double *xi,double *jac,double *p,in
 								mmult(jacf,p,slopen,1,N,1);
 							}
 						}
+						
 					}
 					if (lambda < 1.0 || (lambda > 1.0 && funcf > funci + alpha *lambda *slopei[0])) {
+						
 						if (lambda < lambdaprev) {
 							lambdalo = lambda; 
 						} else {
@@ -674,7 +680,9 @@ int lnsrchmod(double (*funcpt)(double *,int),double *xi,double *jac,double *p,in
 							funchi = funcf;
 							funclo = funcprev;
 						}
-						while (slopen[0] <= beta * slopei[0] || lambdadiff > lambdamin) {
+						printf("%g MAX %g %g \n",lambda,slopen[0],beta * slopei[0]);
+						printf("diff %g %g \n",lambdadiff,lambdamin);
+						while ((slopen[0] < beta * slopei[0]) && lambdadiff >= lambdamin) {
 							lambdainc = -slopen[0] * lambdadiff * lambdadiff / (2.0 * (funchi - (funclo + slopen[0] *lambdadiff)));
 							if ( lambdainc < 0.2 * lambdadiff) {
 								lambdainc = 0.2 * lambdadiff;
@@ -703,6 +711,7 @@ int lnsrchmod(double (*funcpt)(double *,int),double *xi,double *jac,double *p,in
 							}
 						}
 						if (slopen[0] < beta * slopei[0]) {
+							retval = -5;
 							funcf = funclo;
 							for(i = 0; i < N;++i) {
 								pl[i] = p[i] * lambdalo;
@@ -713,7 +722,9 @@ int lnsrchmod(double (*funcpt)(double *,int),double *xi,double *jac,double *p,in
 						
 			}
 			
-			retval = 0;
+			if (retval != -5) {
+				retval = 0;
+			}
 		} else if (lambda < lambdamin) {
 			retval = 1;
 			for (i = 0; i < N;++i) {
@@ -723,7 +734,6 @@ int lnsrchmod(double (*funcpt)(double *,int),double *xi,double *jac,double *p,in
 			if (lambda == 1.0) {
 				lambdatemp = - slopei[0] / (2.0 * (funcf - funci - slopei[0])); 
 			} else {
-				
 				lambda2 = lambda * lambda;
 				lambdaprev2 = lambdaprev * lambdaprev;
 				ll = lambda - lambdaprev;
@@ -738,6 +748,7 @@ int lnsrchmod(double (*funcpt)(double *,int),double *xi,double *jac,double *p,in
 				} else {
 					lambdatemp = (-ab[1] + sqrt( ab[1] * ab[1] - 3.0 * ab[0] *slopei[0]))/ (3.0 * ab[0]);
 				}
+				
 				if (lambdatemp > 0.5 * lambda) {
 					lambdatemp = 0.5 * lambda;
 				}
@@ -751,6 +762,10 @@ int lnsrchmod(double (*funcpt)(double *,int),double *xi,double *jac,double *p,in
 			}
 		}
 	
+	}
+	
+	if (retval == -5) {
+		retval = 5;
 	}
 	
 	free(slopei);

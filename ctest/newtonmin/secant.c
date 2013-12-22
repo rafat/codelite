@@ -243,7 +243,10 @@ int bfgs_min_naive(double (*funcpt)(double *,int),double *xi,int N,double *dx,do
 		linsolve_lower(L,N,jac,step);
 		
 		scale(jac,1,N,-1.0);
-		retval = lnsrch(funcpt,xc,jac,step,N,dx,maxstep,stol,xf); 
+		//retval = lnsrchmod(funcpt,xc,jac,step,N,dx,maxstep,stol,xf,jacf); 
+		retval = lnsrch(funcpt,xc,jac,step,N,dx,maxstep,stol,xf);
+		
+		//retval = swolfe(funcpt,xc,jac,step,N,dx,maxstep,stol,xf);
 		
 		fxf = funcpt(xf,N);
 		if (fxf >= DBL_MAX || fxf <= -DBL_MAX) {
@@ -278,4 +281,104 @@ int bfgs_min_naive(double (*funcpt)(double *,int),double *xi,int N,double *dx,do
 	free(step);
 	free(jacf);
 	return rcode;
+}
+
+static void inithess_lower(double *L,int N,double fi,double fsval,double *dx) {
+	int i,j,ct;
+	double temp;
+	
+	if (fabs(fi) > fsval) {
+		temp = fabs(fi);
+	} else {
+		temp = fsval;
+	}
+	
+	temp = sqrt(temp);
+	
+	for(i = 0; i < N;++i) {
+		ct = i *N;
+		L[ct+i] = temp * dx[i];
+		for(j = 0; j < i;++j) {
+			L[ct+j] = 0;
+		}
+	}
+	
+}
+
+void bfgs_factored(double *H,int N,double *xi,double *xf,double *jac,double *jacf) {
+	int i,j,supd,ct;
+	double sn,yn,fd,yt,jacm,alpha,temp3;
+	double *sk,*yk,*temp,*temp2,*t,*u;
+	
+	sk = (double*) malloc(sizeof(double) *N);
+	yk = (double*) malloc(sizeof(double) *N);
+	temp = (double*) malloc(sizeof(double) *1);
+	temp2 = (double*) malloc(sizeof(double) *1);
+	t = (double*) malloc(sizeof(double) *N);
+	u = (double*) malloc(sizeof(double) *N);
+	
+	msub(xf,xi,sk,1,N);
+	msub(jacf,jac,yk,1,N);
+	
+	sn = l2norm(sk,N);
+	yn = l2norm(yk,N);
+	fd = sqrt((double) FDVAL);
+	
+	mmult(yk,sk,temp,1,N,1);
+	
+	if (temp[0] >= fd*sn*yn) {
+		for(i = 0; i < N;++i) {
+			t[i] = 0.0;
+			for(j = i; j < N;++j) {
+				ct = j * N;
+				t[i] += H[ct + i] * sk[j];
+			}
+		}
+		mmult(t,t,temp2,1,N,1);
+		alpha = sqrt(temp[0]/temp2[0]);
+		supd = 1;
+		for(i = 0; i < N;++i) {
+			temp3 = 0.0;
+			for(j = 0; j < i+1;++j) {
+				ct = i * N;
+				temp3 += H[ct + j] * t[j];
+			}
+			yt = fabs(yk[i] - temp3);
+			if (jac[i] > jacf[i]) {
+				jacm = jac[i];
+			} else {
+				jacm = jacf[i];
+			}
+			if (yt >= fd * jacm) {
+				supd = 0;
+			}
+			u[i] = yk[i] - alpha*temp3;
+		}
+		if (supd == 0) {
+			temp3 = 1.0 / sqrt(temp[0] * temp2[0]);
+			for(i = 0; i < N; ++i) {
+				t[i] *= temp3;
+			}
+			for(i = 1; i < N; ++i) {
+				ct = i *N;
+				for(j = 0; j < i;++j) {
+					H[j*N+i] = H[ct+j];
+				}
+			}
+			qrupdate(H,N,t,u);
+			for(i = 1; i < N; ++i) {
+				ct = i *N;
+				for(j = 0; j < i;++j) {
+					H[ct+j] = H[j*N+i];
+				}
+			}
+		} 
+	} 
+	
+	free(sk);
+	free(yk);
+	free(temp);
+	free(temp2);
+	free(t);
+	free(u);
 }
